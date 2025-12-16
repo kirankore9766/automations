@@ -9,4 +9,5 @@ class Main {
     int sum = first + second;
     System.out.println(first + " + " + second + " = "  + sum);
   }
+  System.out.println(first +"+second + " =" *multiply);
 }
