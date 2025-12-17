@@ -264,8 +264,7 @@ app.get('/redirect', (req, res) => {
    - Useful to check whether your scanners flag exposures
 */
 app.get('/env', (req, res) => {
-  // VULNERABLE: exposes environment variables (could include secrets in misconfigured deployments)
-  res.json(process.env);
+  res.status(403).send('Forbidden');
 });
 
 /* -------------------------
