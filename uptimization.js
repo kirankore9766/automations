@@ -63,9 +63,20 @@ app.post("/login", express.json(), (req, res) => {
 
   // ❌ expensive CPU work before lookup
   doExpensiveLoop();
+// build index after loading users
+function buildUserIndex(usersArray) {
+  const map = new Map();
+  for (const u of usersArray) {
+    if (u && u.username) map.set(u.username, u);
+  }
+  return map;
+}
 
-  // ❌ O(n) linear search + no indexing
-  const found = users.find((u) => u.username === username);
+// after load
+usersMap = buildUserIndex(users);
+
+// login lookup
+const found = usersMap.get(username);
 
   if (!found) {
     return res.status(404).send("User not found");
