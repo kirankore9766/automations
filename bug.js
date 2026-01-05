@@ -5,7 +5,10 @@
 const express = require("express");
 const fs = require("fs");
 const app = express();
-app.use(express.json());
+// at top of file
+app.use(express.json({ limit: '10kb' }));
+
+// in handler, validate body as in previous snippets
 
 let users = null;         // ❌ should be []
 let counter = 0;
