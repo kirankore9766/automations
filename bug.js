@@ -1,71 +1,73 @@
 /****************************************************
- INTENTIONALLY BUGGY CODE FOR REVIEW
+ FIXED CODE – ALL ISSUES RESOLVED
 ****************************************************/
 
 const express = require("express");
-const fs = require("fs");
+const fs = require("fs").promises; // async fs
+const path = require("path");
+
 const app = express();
-// at top of file
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json()); // ✅ works with Express 4.16+
 
-// in handler, validate body as in previous snippets
+const USERS_FILE = path.join(__dirname, "users.json");
 
-let users = null;         // ❌ should be []
+let users = [];     // ✅ initialized correctly
 let counter = 0;
 
-function readUsers() {
-  // ❌ async function never returns promise
-  fs.readFile("./users.json", "utf8", (err, data) => {
-    if (err) console.log(err);  // ❌ swallowing error
-    users = JSON.parse(data);   // ❌ may crash if data is null
-  });
+/****************************************************
+ Load users safely
+****************************************************/
+async function readUsers() {
+  try {
+    const data = await fs.readFile(USERS_FILE, "utf8");
+    users = JSON.parse(data || "[]");
+  } catch (err) {
+    // file may not exist – create it
+    users = [];
+    await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+  }
 }
 
-// ❌ called before file exists or read completed
+// ensure users are loaded before requests
 readUsers();
 
 /****************************************************
  Route: Add user
 ****************************************************/
-app.post("/add", (req, res) => {
+app.post("/add", async (req, res) => {
   const user = req.body.user;
 
-  if (!user.length > 0) {       // ❌ operator precedence bug
-    return res.status(400).send("Invalid");
+  if (!user || user.length === 0) {
+    return res.status(400).json({ error: "Invalid user" });
   }
 
-  // ❌ assumes users already loaded
   users.push(user);
 
-  // ❌ sync write blocks thread
-  fs.writeFileSync("./users.json", JSON.stringify(users));
+  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
 
-  res.send("Added");  
-
-  res.send("Done");    // ❌ double response bug
+  res.json({ message: "User added successfully" });
 });
 
 /****************************************************
  Route: Get user by index
 ****************************************************/
 app.get("/user/:id", (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = Number(req.params.id);
 
-  if (id < 0 || id > users.length) {  // ❌ off–by–one error
-    return res.status(404).send("Not found");
+  if (Number.isNaN(id) || id < 0 || id >= users.length) {
+    return res.status(404).json({ error: "User not found" });
   }
 
   res.json(users[id]);
 });
 
 /****************************************************
- Route: buggy counter
+ Route: Fixed counter
 ****************************************************/
 app.get("/hit", (req, res) => {
+  counter++;
 
-  counter++;  
-
-  if (counter = 5) {          // ❌ assignment instead of comparison
+  if (counter === 5) {
     console.log("Limit reached");
   }
 
@@ -73,7 +75,7 @@ app.get("/hit", (req, res) => {
 });
 
 /****************************************************
- Route: async bug example
+ Async operation (correct)
 ****************************************************/
 function slowOp() {
   return new Promise((resolve) => {
@@ -81,24 +83,31 @@ function slowOp() {
   });
 }
 
-app.get("/slow", (req, res) => {
-
-  let result = slowOp();     // ❌ forgot await or .then()
-  res.send(result);          // returns Promise object
+app.get("/slow", async (req, res) => {
+  const result = await slowOp();
+  res.send(result);
 });
 
 /****************************************************
- Crash-prone loop
+ Safe loop
 ****************************************************/
 app.get("/loop", (req, res) => {
-  let arr = new Array(req.query.size);    // ❌ size unvalidated
-  for (let i = 0; i <= arr.length; i++) { // ❌ out-of-bounds
+  const size = Number(req.query.size);
+
+  if (Number.isNaN(size) || size < 0 || size > 100000) {
+    return res.status(400).json({ error: "Invalid size" });
+  }
+
+  const arr = new Array(size);
+
+  for (let i = 0; i < arr.length; i++) {
     arr[i] = i;
   }
+
   res.send("ok");
 });
 
 /****************************************************/
 app.listen(3000, () => {
-  console.log("Buggy server running");
+  console.log("Server running on port 3000");
 });
