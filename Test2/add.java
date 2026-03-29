@@ -1,1 +1,5 @@
-console.log("hello js");
+public class add {
+    public static void main(String[] args) {
+        System.out.println("hello js");
+    }
+}

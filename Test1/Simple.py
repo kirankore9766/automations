@@ -1,10 +1,17 @@
-# Python Program to calculate the square root
+import math
+import cmath
 
-# Note: change this value for a different result
-num = 8 
+# Set or read the number (example uses hardcoded value)
+num = 8.0
 
-# To take the input from the user
-#num = float(input('Enter a number: '))
+# Compute square root safely: use real sqrt for non-negative, complex sqrt otherwise
+if num >= 0:
+    num_sqrt = math.sqrt(num)
+else:
+    num_sqrt = cmath.sqrt(num)
 
-num_sqrt = num ** 0.5
-print('The square root of %0.3f is %0.3f'%(num ,num_sqrt))
+# Print with appropriate formatting depending on real/complex result
+if isinstance(num_sqrt, complex):
+    print(f'The square root of {num} is {num_sqrt}')
+else:
+    print(f'The square root of {num:.3f} is {num_sqrt:.3f}')
